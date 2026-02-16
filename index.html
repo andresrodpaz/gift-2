@@ -106,6 +106,7 @@ p { line-height:1.8; opacity:0.9; }
   top:0; left:0;
   cursor:crosshair;
   pointer-events:all;
+  touch-action:none;
 }
 
 #hidden-text {
@@ -312,21 +313,64 @@ function nextPage(n){
 function initScratch(){
   const c=document.getElementById("scratch-overlay");
   const s=c.getContext("2d");
+  if(c.dataset.initialized==="true") return;
+  c.dataset.initialized="true";
   c.width=300;c.height=150;
   s.fillStyle="#444";
   s.fillRect(0,0,300,150);
   let count=0;
-  c.addEventListener("mousemove",e=>{
-    if(e.buttons!==1)return;
+
+  const scratchAt=(clientX,clientY)=>{
     const rect=c.getBoundingClientRect();
-    const x=e.clientX-rect.left;
-    const y=e.clientY-rect.top;
+    const x=clientX-rect.left;
+    const y=clientY-rect.top;
     s.globalCompositeOperation="destination-out";
     s.beginPath();
     s.arc(x,y,20,0,Math.PI*2);
     s.fill();
     count++;
     if(count>40)document.getElementById("btn2").style.display="inline-block";
+  };
+
+  let isScratching=false;
+
+  c.addEventListener("pointerdown",e=>{
+    isScratching=true;
+    scratchAt(e.clientX,e.clientY);
+  });
+
+  c.addEventListener("pointermove",e=>{
+    if(!isScratching)return;
+    scratchAt(e.clientX,e.clientY);
+  });
+
+  const stopScratching=()=>{ isScratching=false; };
+  c.addEventListener("pointerup",stopScratching);
+  c.addEventListener("pointercancel",stopScratching);
+  c.addEventListener("pointerleave",stopScratching);
+
+  // Fallback para navegadores sin Pointer Events
+  c.addEventListener("mousemove",e=>{
+    if(e.buttons!==1)return;
+    scratchAt(e.clientX,e.clientY);
+  });
+
+  c.addEventListener("touchstart",e=>{
+    e.preventDefault();
+    const t=e.touches[0];
+    if(!t)return;
+    scratchAt(t.clientX,t.clientY);
+  },{passive:false});
+
+  c.addEventListener("touchmove",e=>{
+    e.preventDefault();
+    const t=e.touches[0];
+    if(!t)return;
+    scratchAt(t.clientX,t.clientY);
+  },{passive:false});
+
+  c.addEventListener("touchend",e=>{
+    e.preventDefault();
   });
 }
 </script>
